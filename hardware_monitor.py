@@ -1,22 +1,41 @@
-import psutil
-import serial
+import subprocess
 from multiprocessing import Process
 from time import sleep
 
-def main():
-    while True:
-        cargaCpu = psutil.cpu_percent(interval=1)
-        usoMemoria = psutil.virtual_memory()
-        info_title("Uso de CPU: " + str(cargaCpu))
-        info_title("Memoria usada %: " + str(usoMemoria.percent))
-        info_title("Memoria usada cantidad: " + str((usoMemoria.used / 1000000000)) + 
-                   "de: " + str((usoMemoria.total / 1000000000)))
-        
 
-def info_title(title):
-    print(title)
+def main():
+    try:
+        while True:
+            path = 'lib/ps_scripts/basic_info.ps1'
+            result = subprocess.run([
+                'powershell',
+                '-ExecutionPolicy',
+                'Unrestricted',
+                '-File',
+                path
+            ], shell=False)
+            sleep(1)
+            if result.returncode != 0:
+                raise Exception("An error has occurred while executing the Powershell script: ")
+    except Exception as e:
+        raise e
+
+
+def infoProcesses():
+    try:
+        while True:
+            path = 'lib/ps_scripts/top_processes.ps1'
+            result = subprocess.run(['powershell', '-ExecutePolicy', 'Unrestricted', '-File', path], shell=False)
+            sleep(1)
+            if result.returncode != 0:
+                data = "An error has occurred while executing the Powershell script" + str(result.stderr)
+                raise Exception(data)
+    except Exception as e:
+        raise e
+
 
 if __name__ == "__main__":
-    p = Process(target=main)
-    p.start()
-    p.join()
+    mainProcess = Process(target=main,daemon=True)
+    topProcesses = Process(target=infoProcesses,daemon=True)
+    mainProcess.start()
+    topProcesses.start()
